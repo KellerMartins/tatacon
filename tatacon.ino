@@ -15,6 +15,7 @@ int lastChannelSample[CHANNELS];
 long int diff[CHANNELS];
 bool triggered[CHANNELS];
 unsigned int releaseTick[CHANNELS];
+unsigned int debounced[CHANNELS];
 
 // ---- Drum pins and settings ----
 
@@ -24,9 +25,9 @@ const int DRUM_PINS[] = {A0, A1, A2, A3}; // L don, R don, L kat, R kat
 const char DRUM_KEYS[] = {KEY_UP_ARROW, KEY_RIGHT_ARROW, KEY_V, KEY_C};
 const int DRUM_SENSITIVITY[] = {2, 1, 1, 2};
 
-const int THRESHOLD = 40;
-const int HOLD_TICKS = 30;
-const int DEBOUNCE_TICKS = 10;
+const int TRIGGER_THRESHOLD = 50;
+const int DEBOUNCE_THRESHOLD = 20;
+const int HOLD_TICKS = 60;
 
 // ---- Keypad pins and mapping ----
 const byte ROWS = 3;
@@ -61,8 +62,9 @@ void setup() {
 
     for (short int i = 0; i < CHANNELS; i++) {
         lastChannelSample[i] = 0;
-        releaseTick[i] = DEBOUNCE_TICKS;
+        releaseTick[i] = HOLD_TICKS;
         triggered[i] = false;
+        debounced[i] = true;
     }
     lastTime = 0;
 
@@ -80,33 +82,42 @@ void loop() {
     }
 
     for (short int i = 0; i < CHANNELS; i++) {
-        if (debug_mode) {
-            Serial.print(diff[i]);
-            Serial.print("\t");
-        }
-
         if (!on)
             continue;
 
         if (!triggered[i]) {
-            if (diff[i] >= THRESHOLD && releaseTick[i] == HOLD_TICKS+DEBOUNCE_TICKS) {
+            if (diff[i] >= TRIGGER_THRESHOLD && releaseTick[i] == HOLD_TICKS && debounced[i]) {
                 triggered[i] = true;
+                debounced[i] = false;
                 releaseTick[i] = 0;
                 Keyboard.press(KeyboardKeycode(DRUM_KEYS[i]));
             }
         } else {
-            if (diff[i] < THRESHOLD && releaseTick[i] >= HOLD_TICKS) {
+            if (releaseTick[i] >= HOLD_TICKS) {
                 triggered[i] = false;
                 Keyboard.release(KeyboardKeycode(DRUM_KEYS[i]));
             }
         }
 
-        releaseTick[i] = min(releaseTick[i] + 1, HOLD_TICKS+DEBOUNCE_TICKS);
+        if (diff[i] < DEBOUNCE_THRESHOLD) {
+            debounced[i] = true;
+        }
+
+        releaseTick[i] = min(releaseTick[i] + 1, HOLD_TICKS);
+
+        if (debug_mode) {
+            Serial.print(diff[i]);
+            Serial.print("\t");
+            Serial.print(triggered[i] ? 100 : 0);
+            Serial.print("\t");
+        }
         // End of each channel
     }
 
     if (debug_mode) {
-        Serial.print(THRESHOLD);
+        Serial.print(TRIGGER_THRESHOLD);
+        Serial.print("\t");
+        Serial.print(DEBOUNCE_THRESHOLD);
         Serial.print("\t");
     }
 
