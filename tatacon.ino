@@ -1,5 +1,6 @@
-#include <HID-Project.h>
-#include <HID-Settings.h>
+
+#include "switch_controller.h"
+
 #include <Keypad.h>
 #include <limits.h>
 
@@ -21,13 +22,12 @@ unsigned int debounced[CHANNELS];
 
 const int RXLED = 17;
 
-const int DRUM_PINS[] = {A0, A1, A2, A3}; // L don, R don, L kat, R kat
-const char DRUM_KEYS[] = {KEY_UP_ARROW, KEY_RIGHT_ARROW, KEY_V, KEY_C};
+const int DRUM_PINS[] = {A0, A1, A2, A3}; // L kat, L don, R don, R kat
 const int DRUM_SENSITIVITY[] = {2, 1, 1, 2};
 
 const int TRIGGER_THRESHOLD = 50;
 const int DEBOUNCE_THRESHOLD = 20;
-const int HOLD_TICKS = 60;
+const int HOLD_TICKS = 120;
 
 // ---- Keypad pins and mapping ----
 const byte ROWS = 3;
@@ -35,14 +35,20 @@ const byte COLS = 4;
 
 // Dummy buttons for special keypad functions
 const byte ON_OFF_BUTTON = '@';
-const byte VOLUME_UP_BUTTON = '[';
-const byte VOLUME_DOWN_BUTTON = ']';
+const byte KEY_A = 'a';
+const byte KEY_B = 'b';
+const byte KEY_P = 'p';
+const byte KEY_M = 'm';
+const byte KEY_RIGHT_ARROW = 'r';
+const byte KEY_LEFT_ARROW = 'l';
+const byte KEY_UP_ARROW = 'u';
+const byte KEY_DOWN_ARROW = 'd';
 
 // Keypad button mapping
 const char KEYS[ROWS][COLS] = {
-    {KEY_Z, KEY_RIGHT_ARROW, KEY_UP_ARROW, KEY_M},
-    {KEY_X, KEY_LEFT_ARROW, KEY_DOWN_ARROW, KEY_Z},
-    {ON_OFF_BUTTON, NO_KEY, VOLUME_UP_BUTTON, VOLUME_DOWN_BUTTON},
+    {KEY_A, KEY_RIGHT_ARROW, KEY_UP_ARROW, KEY_P},
+    {KEY_B, KEY_LEFT_ARROW, KEY_DOWN_ARROW, KEY_M},
+    {ON_OFF_BUTTON, NO_KEY, NO_KEY, NO_KEY},
 };
 
 const byte ROW_PINS[ROWS] = {7, 6, 4};    // connect to the row pinouts of the keypad
@@ -52,7 +58,6 @@ Keypad keypad = Keypad(makeKeymap(KEYS), ROW_PINS, COL_PINS, ROWS, COLS);
 // ----------------
 
 void setup() {
-    Keyboard.begin();
     analogReference(DEFAULT);
 
     // Change ADC prescaler to speed up analogRead
@@ -70,7 +75,7 @@ void setup() {
 
     pinMode(RXLED, OUTPUT);
     digitalWrite(RXLED, LOW);
-    Consumer.begin();
+    SwitchController().releaseHatButton();
 }
 
 void loop() {
@@ -90,12 +95,12 @@ void loop() {
                 triggered[i] = true;
                 debounced[i] = false;
                 releaseTick[i] = 0;
-                Keyboard.press(KeyboardKeycode(DRUM_KEYS[i]));
+                pressDrumKey(i);
             }
         } else {
             if (releaseTick[i] >= HOLD_TICKS) {
                 triggered[i] = false;
-                Keyboard.release(KeyboardKeycode(DRUM_KEYS[i]));
+                releaseDrumKey(i);
             }
         }
 
@@ -136,6 +141,40 @@ void loop() {
     }
 }
 
+void pressDrumKey(int channel) {
+    switch(channel) {
+        case 0:
+            SwitchController().pressButton(Button::L);
+            break;
+        case 1:
+            SwitchController().pressHatButton(Hat::RIGHT);
+            break;
+        case 2:
+            SwitchController().pressButton(Button::Y);
+            break;
+        case 3:
+            SwitchController().pressButton(Button::X);
+            break;
+    }
+}
+
+void releaseDrumKey(int channel) {
+    switch(channel) {
+        case 0:
+            SwitchController().releaseButton(Button::L);
+            break;
+        case 1:
+            SwitchController().releaseHatButton();
+            break;
+        case 2:
+            SwitchController().releaseButton(Button::Y);
+            break;
+        case 3:
+            SwitchController().releaseButton(Button::X);
+            break;
+    }
+}
+
 void handleKeypad() {
     char pressing = keypad.getKey() != NO_KEY;
     Key key = keypad.key[0];
@@ -152,21 +191,60 @@ void handleKeypad() {
             Serial.begin(115200);
         }
         break;
-    case (char)VOLUME_UP_BUTTON:
+    case KEY_A:
         if (pressing) {
-            Consumer.write(MEDIA_VOLUME_UP);
-        }
-        break;
-    case (char)VOLUME_DOWN_BUTTON:
-        if (pressing) {
-            Consumer.write(MEDIA_VOLUME_DOWN);
-        }
-        break;
-    default:
-        if (pressing) {
-            Keyboard.press(KeyboardKeycode(key.kchar));
+            SwitchController().pressButton(Button::A);
         } else if (key.kstate == RELEASED) {
-            Keyboard.release(KeyboardKeycode(key.kchar));
+            SwitchController().releaseButton(Button::A);
+        }
+        break;
+    case KEY_B:
+        if (pressing) {
+            SwitchController().pressButton(Button::B);
+        } else if (key.kstate == RELEASED) {
+            SwitchController().releaseButton(Button::B);
+        }
+        break;
+    case KEY_P:
+        if (pressing) {
+            SwitchController().pressButton(Button::PLUS);
+        } else if (key.kstate == RELEASED) {
+            SwitchController().releaseButton(Button::PLUS);
+        }
+        break;
+    case KEY_M:
+        if (pressing) {
+            SwitchController().pressButton(Button::MINUS);
+        } else if (key.kstate == RELEASED) {
+            SwitchController().releaseButton(Button::MINUS);
+        }
+        break;
+    case KEY_LEFT_ARROW:
+        if (pressing) {
+            SwitchController().pressHatButton(Hat::LEFT);
+        } else if (key.kstate == RELEASED) {
+            SwitchController().releaseHatButton();
+        }
+        break;
+    case KEY_RIGHT_ARROW:
+        if (pressing) {
+            SwitchController().pressHatButton(Hat::RIGHT);
+        } else if (key.kstate == RELEASED) {
+            SwitchController().releaseHatButton();
+        }
+        break;
+    case KEY_UP_ARROW:
+        if (pressing) {
+            SwitchController().pressHatButton(Hat::UP);
+        } else if (key.kstate == RELEASED) {
+            SwitchController().releaseHatButton();
+        }
+        break;
+    case KEY_DOWN_ARROW:
+        if (pressing) {
+            SwitchController().pressHatButton(Hat::DOWN);
+        } else if (key.kstate == RELEASED) {
+            SwitchController().releaseHatButton();
         }
         break;
     }
