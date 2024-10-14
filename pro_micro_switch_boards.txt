@@ -1,0 +1,55 @@
+# Add the following to the packages\SparkFun\hardware\avr\1.1.13\boards.txt file in the Arduino IDE
+
+################################################################################
+######################### Pro Micro Switch Controller ##########################
+################################################################################
+ns_con.name=SparkFun Pro Micro as Switch Controller
+
+ns_con.upload.tool=avrdude
+ns_con.upload.protocol=avr109
+ns_con.upload.maximum_size=28672
+ns_con.upload.maximum_data_size=2560
+ns_con.upload.speed=57600
+ns_con.upload.disable_flushing=true
+ns_con.upload.use_1200bps_touch=true
+ns_con.upload.wait_for_upload_port=true
+
+ns_con.bootloader.tool=avrdude
+ns_con.bootloader.unlock_bits=0x3F
+ns_con.bootloader.lock_bits=0x2F
+ns_con.bootloader.low_fuses=0xFF
+ns_con.bootloader.high_fuses=0xD8
+
+ns_con.build.board=AVR_PROMICRO
+ns_con.build.core=arduino:arduino
+ns_con.build.variant=promicro
+ns_con.build.mcu=atmega32u4
+
+ns_con.build.vid=0x0F0D
+ns_con.build.pid=0x0092
+ns_con.build.usb_manufacturer="HORI CO.,LTD."
+ns_con.build.usb_product="POKKEN CONTROLLER"
+ns_con.build.extra_flags={build.usb_flags}
+
+######################### Pro Micro 3.3V / 8MHz ################################
+ns_con.menu.cpu.8MHzatmega32U4=ATmega32U4 (3.3V, 8 MHz)
+
+ns_con.menu.cpu.8MHzatmega32U4.build.pid.0=0x0F0D
+ns_con.menu.cpu.8MHzatmega32U4.build.pid.1=0x0092
+ns_con.menu.cpu.8MHzatmega32U4.build.pid=0x0092
+ns_con.menu.cpu.8MHzatmega32U4.build.f_cpu=8000000L
+
+ns_con.menu.cpu.8MHzatmega32U4.bootloader.extended_fuses=0xFE
+ns_con.menu.cpu.8MHzatmega32U4.bootloader.file=caterina/Caterina-promicro8.hex
+
+
+############################# Pro Micro 5V / 16MHz #############################
+ns_con.menu.cpu.16MHzatmega32U4=ATmega32U4 (5V, 16 MHz)
+
+ns_con.menu.cpu.16MHzatmega32U4.build.pid.0=0x0F0D
+ns_con.menu.cpu.16MHzatmega32U4.build.pid.1=0x0092
+ns_con.menu.cpu.16MHzatmega32U4.build.pid=0x0092
+ns_con.menu.cpu.16MHzatmega32U4.build.f_cpu=16000000L
+
+ns_con.menu.cpu.16MHzatmega32U4.bootloader.extended_fuses=0xCB
+ns_con.menu.cpu.16MHzatmega32U4.bootloader.file=caterina/Caterina-promicro16.hex
